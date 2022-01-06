@@ -11,6 +11,7 @@
 #include <vector>
 #include <map>
 #include <iomanip>
+#include <sys/socket.h>
 #include "HybridAnomalyDetector.h"
 
 using namespace std;
@@ -50,6 +51,35 @@ class StdIO : public DefaultIO {
   }
   ~StdIO() {}
 };
+class SocketIO : public DefaultIO {
+  int fd;
+  SocketIO(int fd) noexcept(false) {
+      this->fd = fd;
+  }
+  string read() override {
+      char *buf;
+      char *currChar = buf;
+      while (*currChar++ != '\n') {
+          recv(fd, currChar, 1, 0);
+      }
+      return buf;
+  }
+  void read(float *f) override {
+      char buf[4];
+      recv(fd, buf, 4, 0);
+      char *t = (char *) f;
+      for (int i = 0; i < 4; ++i) {
+          t[i] = buf[i];
+      }
+  }
+  void write(string text) override {
+      send(fd, text.data(), text.size(), 0);
+  }
+  void write(float f) override {
+      string text = to_string(f);
+      send(fd, text.data(), text.size(), 0);
+  }
+};
 // you may add here helper classes
 
 
@@ -81,11 +111,11 @@ class Upload : public Command {
       this->numOfLines = numOfLines;
   }
 
-  void readFile(const string& fileName) {
+  void readFile(const string &fileName) {
       fstream out;
       out.open(fileName, ios_base::out);
       string line;
-      line=this->dio->read();
+      line = this->dio->read();
       while (line != "done") {
           out << line << endl;
           line = this->dio->read();
