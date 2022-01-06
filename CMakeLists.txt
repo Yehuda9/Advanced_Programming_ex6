@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16.1)
 project(assignment6)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "-pthread")
 
 add_executable(assignment6
         anomaly_detection_util.cpp
@@ -20,4 +21,5 @@ add_executable(assignment6
         SimpleAnomalyDetector.cpp
         SimpleAnomalyDetector.h
         timeseries.cpp
-        timeseries.h)
+        timeseries.h
+        #[[main.cpp]])

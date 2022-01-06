@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include <map>
+#include <unistd.h>
 #include <iomanip>
 #include <sys/socket.h>
 #include "HybridAnomalyDetector.h"
@@ -57,24 +58,23 @@ class SocketIO : public DefaultIO {
   SocketIO(int fd) noexcept(false) {
       this->fd = fd;
   }
+
   string read() override {
-      char *buf;
-      char *currChar = buf;
-      while (*currChar++ != '\n') {
-          recv(fd, currChar, 1, 0);
+      string line;
+      char c = 0;
+      recv(this->fd, &c, sizeof(char),0);
+      while (c != '\n') {
+          line += c;
+          recv(fd, &c, sizeof(char),0);
       }
-      return buf;
+      return line;
   }
   void read(float *f) override {
-      char buf[4];
-      recv(fd, buf, 4, 0);
-      char *t = (char *) f;
-      for (int i = 0; i < 4; ++i) {
-          t[i] = buf[i];
-      }
+      string buf = read();
+      *f = stof(buf);
   }
   void write(string text) override {
-      send(fd, text.data(), text.size(), 0);
+      send(fd, text.c_str(), text.size(), 0);
   }
   void write(float f) override {
       string text = to_string(f);
@@ -427,6 +427,15 @@ class CLIData {
   }
   bool getRunning() {
       return *this->running;
+  }
+  ~CLIData(){
+      for (int i = 0; i < 6; ++i) {
+          delete commands[i];
+      }
+      delete tsTest;
+      delete tsTrain;
+      delete numOfLines;
+      delete correlationThreshold;
   }
 };
 

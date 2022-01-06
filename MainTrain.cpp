@@ -65,7 +65,7 @@ int initClient(int port)throw (const char*){
     serv_addr.sin_port = htons(port);
     if (connect(serverFD,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
 		throw "connection problem";
-		
+
     return serverFD;	
 }
 
@@ -84,7 +84,7 @@ void clientSide1(int port,string outputFile)throw (const char*){
 void clientSide2(int port,string outputFile)throw (const char*){
 
 	int serverFD = initClient(port);
-	
+
 	ofstream out(outputFile);
 	ifstream in("input.txt");
 	string input="";

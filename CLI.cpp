@@ -6,9 +6,9 @@ CLI::CLI(DefaultIO *dio) {
 
 void CLI::start() {
     CLIData *cliData;
-    bool *running;
+    bool *running = new bool;
     *running = true;
-    cliData = new CLIData(dio, running,0.9);
+    cliData = new CLIData(dio, running, 0.9);
     /*string menu = "Welcome to the Anomaly Detection Server.\n"
                   "Please choose an option:\n"
                   "1.upload a time series csv file\n"
@@ -17,11 +17,11 @@ void CLI::start() {
                   "4.display results\n"
                   "5.upload anomalies and analyze results\n"
                   "6.exit\n";*/
-    float opt;
+    int opt;
     while (cliData->getRunning()) {
         cliData->printMenu();
-        dio->read(&opt);
-        cliData->executeCommand((int) opt);
+        opt = (int) stof(dio->read());
+        cliData->executeCommand(opt);
         /*switch ((int) opt) {
             case 1: {
                 Upload upload(dio);
@@ -57,8 +57,10 @@ void CLI::start() {
             default: {}
         }*/
     }
+    delete cliData;
 }
 
 CLI::~CLI() {
+    //delete dio;
 }
 

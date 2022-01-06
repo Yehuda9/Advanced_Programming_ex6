@@ -1,51 +1,50 @@
-#include <iostream>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <thread>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <unistd.h>
 #include "Server.h"
 
-Server::Server(int port)throw (const char*) {
-    fd = socket(AF_INET, SOCK_STREAM,0);
-    if (fd<0){
+Server::Server(int port) throw(const char *) {
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) {
         throw "socket failed";
     }
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = INADDR_ANY;
     server.sin_port = htons(port);
 
-    if (bind(fd, (struct sockaddr*)&server, sizeof(server)) < 0){
+    if (bind(fd, (struct sockaddr *) &server, sizeof(server)) < 0) {
         throw "bind failed";
     }
-    if (listen(fd, 3)<0){
+    if (listen(fd, 3) < 0) {
         throw "listen failure";
     }
 }
-
-void Server::start(ClientHandler& ch)throw(const char*){
-    t=new thread([&ch, this] (){
-        socklen_t clientSize = sizeof(client);
-        //loop thought all clients
-        //??????????????
-        while (run){
-            int aClient = accept(fd, (struct sockaddr*)&client, &clientSize);
-            if (aClient < 0){
-                throw "accept failure";
-            }
+void handleSigalarm(int sig) {
+    exit(0);
+}
+void Server::start(ClientHandler &ch) throw(const char *) {
+    t = new thread([&ch, this]() {
+      signal(SIGALRM, handleSigalarm);
+      socklen_t clientSize = sizeof(client);
+      //loop thought all clients
+      while (run) {
+          alarm(5);
+          int aClient = accept(fd, (struct sockaddr *) &client, &clientSize);
+          if (aClient < 0) {
+              throw "accept failure";
+          }
+          alarm(0);
+          thread *t1 = new thread([&aClient, this, &ch]() {
             ch.handle(aClient);
             close(aClient);
-            close(fd);
-        }
+          });
+          //t1->detach();
+          t1->join();
+      }
+      close(fd);
     });
 }
 
-void Server::stop(){
-	t->join(); // do not delete this!
+void Server::stop() {
     run = false;
+    t->join(); // do not delete this!
 }
 
 Server::~Server() {
