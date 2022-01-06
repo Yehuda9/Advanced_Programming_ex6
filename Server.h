@@ -25,7 +25,7 @@ class ClientHandler{
 class AnomalyDetectionHandler:public ClientHandler{
 	public:
     virtual void handle(int clientID){
-        socketIO *d = new socketIO(clientID);
+        SocketIO *d = new SocketIO(clientID);
         CLI *cli = new CLI(d);
         cli->start();
     }

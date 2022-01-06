@@ -53,6 +53,7 @@ class StdIO : public DefaultIO {
 };
 class SocketIO : public DefaultIO {
   int fd;
+ public:
   SocketIO(int fd) noexcept(false) {
       this->fd = fd;
   }
