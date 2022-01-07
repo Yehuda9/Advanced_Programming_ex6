@@ -41,14 +41,12 @@ class Server {
   sockaddr_in server;
   sockaddr_in client;
   volatile bool run = true;
-
   // you may add data members
-
  public:
   Server(int port) throw(const char *);
   virtual ~Server();
   void start(ClientHandler &ch) throw(const char *);
   void stop();
-};
+  };
 
 #endif /* SERVER_H_ */

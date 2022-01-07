@@ -62,10 +62,10 @@ class SocketIO : public DefaultIO {
   string read() override {
       string line;
       char c = 0;
-      recv(this->fd, &c, sizeof(char),0);
+      recv(this->fd, &c, sizeof(char), 0);
       while (c != '\n') {
           line += c;
-          recv(fd, &c, sizeof(char),0);
+          recv(fd, &c, sizeof(char), 0);
       }
       return line;
   }
@@ -77,7 +77,10 @@ class SocketIO : public DefaultIO {
       send(fd, text.c_str(), text.size(), 0);
   }
   void write(float f) override {
-      string text = to_string(f);
+      //string text = to_string(f);
+      ostringstream oss;
+      oss << f;
+      string text(oss.str());
       send(fd, text.data(), text.size(), 0);
   }
 };
@@ -428,7 +431,7 @@ class CLIData {
   bool getRunning() {
       return *this->running;
   }
-  ~CLIData(){
+  ~CLIData() {
       for (int i = 0; i < 6; ++i) {
           delete commands[i];
       }
