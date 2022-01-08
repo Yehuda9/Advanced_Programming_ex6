@@ -3,7 +3,7 @@ project(assignment6)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "-pthread")
-
+set(CMAKE_CXX_FLAGS "-pthread")
 add_executable(assignment6
         anomaly_detection_util.cpp
         anomaly_detection_util.h

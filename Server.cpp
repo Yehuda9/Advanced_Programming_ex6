@@ -1,5 +1,12 @@
+/*
+ * Author: 208994285 Yehuda Schwartz
+ * and 318960168 Avital Gololobov
+ */
 #include "Server.h"
-
+/**
+ * constructor
+ * @param port
+ */
 Server::Server(int port) throw(const char *) {
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
@@ -16,7 +23,15 @@ Server::Server(int port) throw(const char *) {
         throw "listen failure";
     }
 }
+/**
+ * helper function to avoid waiting forever for clients
+ * @param sig
+ */
 void handleSigalarm(int sig) {}
+/**
+ * the server starts running and connects to the clients
+ * @param ch - client handler
+ */
 void Server::start(ClientHandler &ch) throw(const char *) {
     t = new thread([&ch, this]() {
       signal(SIGALRM, handleSigalarm);
@@ -39,6 +54,9 @@ void Server::start(ClientHandler &ch) throw(const char *) {
     });
 }
 
+/**
+ * the server stops running and join all threads that was opened
+ */
 void Server::stop() {
     run = false;
     try {

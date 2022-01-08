@@ -1,3 +1,8 @@
+/*
+ * Author: 208994285 Yehuda Schwartz
+ * and 318960168 Avital Gololobov
+ */
+
 #ifndef SERVER_H_
 #define SERVER_H_
 #include <iostream>
@@ -29,7 +34,6 @@ class AnomalyDetectionHandler : public ClientHandler {
   virtual void handle(int clientID) {
       DefaultIO *dio = new SocketIO(clientID);
       CLI *cli = new CLI(dio);
-      //CLI cli(dio);
       cli->start();
   }
 };
