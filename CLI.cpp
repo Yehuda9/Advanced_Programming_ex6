@@ -11,7 +11,7 @@ CLI::CLI(DefaultIO *dio) {
  * start CLI by creating CLIData instance and executing commands in loop
  */
 void CLI::start() {
-    bool *running;
+    bool *running=new bool;
     *running = true;
     CLIData *cliData = new CLIData(*dio, running);
     float opt;
@@ -24,6 +24,7 @@ void CLI::start() {
         dio->read(&opt);
         cliData->executeCommand((int) opt);
     }
+    delete running;
     delete cliData;
 }
 

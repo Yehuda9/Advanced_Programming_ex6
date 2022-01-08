@@ -5,7 +5,7 @@
 #ifndef CLI_H_
 #define CLI_H_
 
-#include <string.h>
+#include <cstring>
 #include "commands.h"
 
 using namespace std;
