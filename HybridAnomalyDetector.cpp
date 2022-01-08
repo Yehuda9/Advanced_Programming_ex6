@@ -1,12 +1,11 @@
 /*
- *
  * Author: 208994285 Yehuda Schwartz
  * and 318960168 Avital Gololobov
  */
 #include "HybridAnomalyDetector.h"
 #include "minCircle.h"
-HybridAnomalyDetector::HybridAnomalyDetector() :SimpleAnomalyDetector(){}
-
+HybridAnomalyDetector::HybridAnomalyDetector(float *p) : SimpleAnomalyDetector(p) {
+}
 HybridAnomalyDetector::~HybridAnomalyDetector() {}
 /**
  * check the correlation and pass to the right method.
@@ -17,7 +16,7 @@ HybridAnomalyDetector::~HybridAnomalyDetector() {}
  */
 void HybridAnomalyDetector::checkCorrelation(const TimeSeries &ts, int col1, int col2, float correlation) {
     // if correlation is high, use SimpleAnomalyDetector
-    if (col2 != -1 && correlation >= 0.9) {
+    if (col2 != -1 && correlation >= *this->correlationThreshold) {
         cf.push_back(SimpleAnomalyDetector::initializeCorrelatedFeatures(col1, col2, ts, correlation));
         return;
     }
@@ -81,3 +80,4 @@ void HybridAnomalyDetector::is_anomaly(vector<AnomalyReport> &reports,
         reports.push_back(newReport);
     }
 }
+

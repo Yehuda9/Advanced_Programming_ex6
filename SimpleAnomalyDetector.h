@@ -1,5 +1,4 @@
 /*
- *
  * Author: 208994285 Yehuda Schwartz
  * and 318960168 Avital Gololobov
  */
@@ -24,11 +23,12 @@ struct correlatedFeatures {
 
 class SimpleAnomalyDetector : public TimeSeriesAnomalyDetector {
  protected:
+  float *correlationThreshold;
   vector<correlatedFeatures> cf;
  public:
-  SimpleAnomalyDetector();
+  SimpleAnomalyDetector(float *p);
   virtual ~SimpleAnomalyDetector();
-
+  //virtual void setCorrelationThreshold(float ct);
   virtual void learnNormal(const TimeSeries &ts);
   virtual correlatedFeatures initializeCorrelatedFeatures(int i, int j, const TimeSeries &ts, float corrlation);
   virtual vector<AnomalyReport> detect(const TimeSeries &ts);

@@ -1,5 +1,4 @@
 /*
- *
  * Author: 208994285 Yehuda Schwartz
  * and 318960168 Avital Gololobov
  */
@@ -10,9 +9,8 @@
 
 class HybridAnomalyDetector : public SimpleAnomalyDetector {
  public:
-  HybridAnomalyDetector();
+  HybridAnomalyDetector(float *p);
   virtual ~HybridAnomalyDetector();
-
   virtual void checkCorrelation(const TimeSeries &ts, int col1, int col2, float correlation);
   virtual correlatedFeatures initializeCorrelatedFeatures(int i, int j, const TimeSeries &ts, float correlation);
   virtual void is_anomaly(vector<AnomalyReport> &reports,

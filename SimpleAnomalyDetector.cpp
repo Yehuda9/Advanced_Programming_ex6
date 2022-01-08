@@ -1,11 +1,12 @@
 /*
- *
  * Author: 208994285 Yehuda Schwartz
  * and 318960168 Avital Gololobov
  */
 #include "SimpleAnomalyDetector.h"
 
-SimpleAnomalyDetector::SimpleAnomalyDetector() {}
+SimpleAnomalyDetector::SimpleAnomalyDetector(float *p) {
+    this->correlationThreshold = p;
+}
 
 SimpleAnomalyDetector::~SimpleAnomalyDetector() {}
 /**
@@ -37,7 +38,7 @@ void SimpleAnomalyDetector::learnNormal(const TimeSeries &ts) {
  * @param correlation correlation between columns 1 and 2
  */
 void SimpleAnomalyDetector::checkCorrelation(const TimeSeries &ts, int col1, int col2, float correlation) {
-    if (col2 != -1 && correlation >= 0.9) {
+    if (col2 != -1 && correlation >= *this->correlationThreshold) {
         cf.push_back(initializeCorrelatedFeatures(col1, col2, ts, correlation));
     }
 }
@@ -115,5 +116,8 @@ void SimpleAnomalyDetector::is_anomaly(vector<AnomalyReport> &reports,
         reports.push_back(newReport);
     }
 }
+/*void SimpleAnomalyDetector::setCorrelationThreshold(float ct) {
+    this->correlationThreshold = ct;
+}*/
 
 

@@ -1,6 +1,4 @@
 /*
- * anomaly_detection_util.h
- *
  * Author: 208994285 Yehuda Schwartz
  * and 318960168 Avital Gololobov
  */

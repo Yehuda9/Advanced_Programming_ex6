@@ -16,24 +16,14 @@ Server::Server(int port) throw(const char *) {
         throw "listen failure";
     }
 }
-void handleSigalarm(int sig) {
-    //cout<<"alarm"<<endl;
-    //std::terminate();
-    //throw runtime_error("timeout");
-    //exit(0);
-}
+void handleSigalarm(int sig) {}
 void Server::start(ClientHandler &ch) throw(const char *) {
     t = new thread([&ch, this]() {
-      //sigaction(SIGALRM, &(struct sigaction) {handle_sigalarm}, nullptr);
       signal(SIGALRM, handleSigalarm);
       socklen_t clientSize = sizeof(client);
       //loop thought all clients
-      /*fd_set active_fd_set, read_fd_set;
-      FD_ZERO (&active_fd_set); // set fd_set to zeros
-      FD_SET (fd, &active_fd_set); // add sock to the set*/
       while (run) {
           alarm(5);
-          //select(fd, NULL, NULL, NULL, reinterpret_cast<timeval *>(5));
           int aClient = accept(fd, (struct sockaddr *) &client, &clientSize);
           if (aClient < 0) {
               throw "accept failure";
@@ -43,7 +33,6 @@ void Server::start(ClientHandler &ch) throw(const char *) {
             ch.handle(aClient);
             close(aClient);
           });
-          //t1->detach();
           t1->join();
       }
       close(fd);
@@ -53,10 +42,8 @@ void Server::start(ClientHandler &ch) throw(const char *) {
 void Server::stop() {
     run = false;
     try {
-        t->join(); // do not delete this!
-    } catch (exception &exception) {
-
-    }
+        t->join();
+    } catch (exception &exception) {}
 }
 
 Server::~Server() {

@@ -1,5 +1,7 @@
-
-
+/*
+ * Author: 208994285 Yehuda Schwartz
+ * and 318960168 Avital Gololobov
+ */
 #ifndef CLI_H_
 #define CLI_H_
 
@@ -10,7 +12,6 @@ using namespace std;
 
 class CLI {
 	DefaultIO* dio;
-	// you can add data members
 public:
 	CLI(DefaultIO* dio);
 	void start();

@@ -1,18 +1,18 @@
-
-
+/*
+ * Author: 208994285 Yehuda Schwartz
+ * and 318960168 Avital Gololobov
+ */
 #ifndef COMMANDS_H_
 #define COMMANDS_H_
 
 #include<iostream>
-#include <string.h>
+#include <cstring>
 #include <algorithm>
 #include <fstream>
 #include <utility>
 #include <vector>
 #include <map>
-#include <unistd.h>
 #include <iomanip>
-#include <sys/socket.h>
 #include "HybridAnomalyDetector.h"
 
 using namespace std;
@@ -24,130 +24,120 @@ class DefaultIO {
   virtual void write(float f) = 0;
   virtual void read(float *f) = 0;
   virtual ~DefaultIO() {}
-
-  // you may add additional methods here
 };
-
+/**
+ * implementation of DefaultIO interface
+ * standard IO using cin and cout to read and write
+ */
 class StdIO : public DefaultIO {
 
  public:
-  StdIO() : DefaultIO() {
-
-  }
+  StdIO() : DefaultIO() {}
+  /**
+   * @return string line from cin
+   */
   virtual string read() {
       string s;
       cin >> s;
       return s;
   }
+  /**
+   * write text to cout
+   * @param text to write to cout
+   */
   virtual void write(string text) {
       cout << text;
   }
-
+  /**
+   * write float to cout
+   * @param f float number to write
+   */
   virtual void write(float f) {
       cout << f;
   }
-
+  /**
+   * read from float address to cin
+   * @param f address of float to read
+   */
   virtual void read(float *f) {
       cin >> *f;
   }
   ~StdIO() {}
 };
-class SocketIO : public DefaultIO {
-  int fd;
- public:
-  SocketIO(int fd) noexcept(false) {
-      this->fd = fd;
-  }
-
-  string read() override {
-      string line;
-      char c = 0;
-      recv(this->fd, &c, sizeof(char), 0);
-      while (c != '\n') {
-          line += c;
-          recv(fd, &c, sizeof(char), 0);
-      }
-      return line;
-  }
-  void read(float *f) override {
-      string buf = read();
-      *f = stof(buf);
-  }
-  void write(string text) override {
-      send(fd, text.c_str(), text.size(), 0);
-  }
-  void write(float f) override {
-      //string text = to_string(f);
-      ostringstream oss;
-      oss << f;
-      string text(oss.str());
-      send(fd, text.data(), text.size(), 0);
-  }
-};
-// you may add here helper classes
-
-
-// you may edit this class
+/**
+ * Command defines an interface for commands.
+ * each command has a defaultIO and description to communicate and execute() method to run the command.
+ */
 class Command {
  protected:
-  DefaultIO *dio;
+  DefaultIO &dio;
  public:
   string description;
-  Command(DefaultIO *d, const string &s) : dio(d), description() {
+  Command(DefaultIO &d, const string &s) : dio(d), description() {
       description = s;
   }
   virtual void execute() = 0;
   virtual ~Command() {}
 };
-
-// option 1:
+/**
+ * Upload command has also test and train timeSeries.
+ */
 class Upload : public Command {
  private:
-  TimeSeries *tsTest;
-  TimeSeries *tsTrain;
+  TimeSeries &tsTest;
+  TimeSeries &tsTrain;
   int *numOfLines;
  public:
-  explicit Upload(DefaultIO *dio, const string &s, TimeSeries *tsTrain, TimeSeries *tsTest, int *numOfLines) : Command(
+  /**
+   * constructor to initialize Upload
+   * @param dio defaultIO
+   * @param s string description to pass to super
+   * @param tsTrain address of timeSeries
+   * @param tsTest address of timeSeries
+   * @param numOfLines address to int for number of lines in the files
+   */
+  explicit Upload(DefaultIO &dio, const string &s, TimeSeries &tsTrain, TimeSeries &tsTest, int *numOfLines) : Command(
       dio,
-      s) {
-      this->tsTrain = tsTrain;
-      this->tsTest = tsTest;
+      s), tsTest(tsTest), tsTrain(tsTrain) {
       this->numOfLines = numOfLines;
   }
-
+  /**
+   * given file name, this method read from client until "done" and write in to <fileName>
+   * @param fileName to write
+   */
   void readFile(const string &fileName) {
+      //open new file
       fstream out;
       out.open(fileName, ios_base::out);
       string line;
-      line = this->dio->read();
+      //read until "done" and write to file
+      line = this->dio.read();
       while (line != "done") {
           out << line << endl;
-          line = this->dio->read();
+          line = this->dio.read();
       }
       out.close();
   }
-
+  /**
+   * handling receiving 2 csv file.
+   */
   virtual void execute() {
-      dio->write("Please upload your local train CSV file.\n");
+      dio.write("Please upload your local train CSV file.\n");
       readFile("anomalyTrain.csv");
-      this->tsTrain->initialize("anomalyTrain.csv");
-      dio->write("Upload complete.\n");
-      dio->write("Please upload your local test CSV file.\n");
+      this->tsTrain.initialize("anomalyTrain.csv");
+      dio.write("Upload complete.\n");
+      dio.write("Please upload your local test CSV file.\n");
       readFile("anomalyTest.csv");
-      this->tsTest->initialize("anomalyTest.csv");
-      *numOfLines = (int) this->tsTest->getTable().at(0).size();
-      dio->write("Upload complete.\n");
-      close();
+      this->tsTest.initialize("anomalyTest.csv");
+      *numOfLines = (int) this->tsTest.getTable().at(0).size();
+      dio.write("Upload complete.\n");
   }
-  virtual void close() {}
-  virtual ~Upload() {
-
-  }
-  //Yehuda
+  virtual ~Upload() {}
 
 };
-
-// option 2:
+/**
+ * ChangeSettings holds pointer to correlationThreshold.
+ */
 class ChangeSettings : public Command {
  private:
   float *correlationThreshold;
@@ -155,104 +145,132 @@ class ChangeSettings : public Command {
       return c <= 1 && c >= 0;
   }
  public:
-  explicit ChangeSettings(DefaultIO *dio, const string &s, float *ct) : Command(dio, s) {
+  /**
+   * constructor to ChangeSettings initialize the pointer to correlationThreshold.
+   * @param dio
+   * @param s
+   * @param ct
+   */
+  explicit ChangeSettings(DefaultIO &dio, const string &s, float *ct) : Command(dio, s) {
       correlationThreshold = ct;
   }
+  /**
+   * receiving new correlationThreshold.
+   */
   virtual void execute() {
-      dio->write("The current correlation threshold is ");
-      dio->write(*correlationThreshold);
-      dio->write("\n");
+      dio.write("The current correlation threshold is ");
+      dio.write(*correlationThreshold);
+      dio.write("\n");
       float t;
       float *v = &t;
-      dio->write("Type a new threshold\n");
-      dio->read(v);
+      dio.write("Type a new threshold\n");
+      dio.read(v);
+      //read new correlation until valid
       while (!isValidCorrelationThreshold(*v)) {
-          dio->write("please choose a value between 0 and 1.\n");
-          dio->read(v);
+          dio.write("please choose a value between 0 and 1.\n");
+          dio.read(v);
       }
+      //update the value inside the address of correlationThreshold.
       *this->correlationThreshold = *v;
   }
-
-  //Yehuda
-
 };
-
-// option 3:
+/**
+ * AnomalyDetection has pointers to correlationThreshold, reports vector and 2 TimeSeries
+ */
 class AnomalyDetection : public Command {
  private:
-  float correlationThreshold;
-  vector<AnomalyReport> *reports;
-  TimeSeries *tsTest;
-  TimeSeries *tsTrain;
+  float *correlationThreshold;
+  vector<AnomalyReport> &reports;
+  TimeSeries &tsTest;
+  TimeSeries &tsTrain;
  public:
-  explicit AnomalyDetection(DefaultIO *dio,
+  /**
+   * constructor for AnomalyDetection initialize all its members to pointers from outside
+   * @param dio reference to DefaultIO
+   * @param s description string
+   * @param r reference to report vector
+   * @param tsTest reference to TimeSeries
+   * @param tsTrain reference to TimeSeries
+   * @param correlationThreshold pointer to correlationThreshold
+   */
+  explicit AnomalyDetection(DefaultIO &dio,
                             const string &s,
-                            vector<AnomalyReport> *r,
-                            TimeSeries *tsTest,
-                            TimeSeries *tsTrain,
-                            float correlationThreshold) : Command(dio, s)/*,reports(r)*/{
-      this->reports = r;
-      this->tsTest = tsTest;
-      this->tsTrain = tsTrain;
+                            vector<AnomalyReport> &r,
+                            TimeSeries &tsTest,
+                            TimeSeries &tsTrain,
+                            float *correlationThreshold) : Command(dio, s), reports(r), tsTest(tsTest),
+                                                           tsTrain(tsTrain) {
       this->correlationThreshold = correlationThreshold;
   };
-
+  /**
+   * execute method create new HybridAnomalyDetector passing to its constructor the address of correlationThreshold.
+   * invoke learnNormal method on train TimeSeries and get the report vector from detect method on test TimeSeries.
+   */
   void execute() override {
-      HybridAnomalyDetector ad;
-      ad.learnNormal(*this->tsTrain);
-      //reports(ad.detect(*this->tsTest));
-      *this->reports = move(ad.detect(*this->tsTest));
-      dio->write("anomaly detection complete.\n");
+      HybridAnomalyDetector ad(correlationThreshold);
+      ad.learnNormal(this->tsTrain);
+      this->reports = ad.detect(this->tsTest);
+      dio.write("anomaly detection complete.\n");
   }
 };
-
-// option 4:
+/**
+ * GetResults hold reference to report anomalies vector
+ */
 class GetResults : public Command {
-  vector<AnomalyReport> *results;
+  vector<AnomalyReport> &results;
 
  public:
-  GetResults(DefaultIO *dio, const string &s, vector<AnomalyReport> *reports) : Command(dio, s) {
-      this->results = reports;
-  }
+  /**
+   * GetResults constructor
+   * @param dio defaultIO
+   * @param s string description
+   * @param reports anomalies vector
+   */
+  GetResults(DefaultIO &dio, const string &s, vector<AnomalyReport> &reports) : Command(dio, s), results(reports) {}
+  /**
+   * write to defaultIO the anomalies vector
+   */
   void execute() override {
-      for (const AnomalyReport &r: *results) {
-          dio->write(to_string(r.timeStep) + "\t" + r.description + "\n");
+      for (const AnomalyReport &r: results) {
+          dio.write(to_string(r.timeStep) + "\t" + r.description + "\n");
       }
-      dio->write("Done.\n");
+      dio.write("Done.\n");
   }
 
 };
 
-// option 5:
 class Analyze : public Command {
-  vector<tuple<long, long>> anomaliesSequenceVec;
-  vector<AnomalyReport> *ar;
+  vector<AnomalyReport> &ar;
+  // num of lines in csv file
   int *numOfLines;
  public:
-  Analyze(DefaultIO *dio, vector<AnomalyReport> *reports, int *n, const string &s) : Command(dio, s) {
-      this->ar = reports;
+  // constructor:
+  Analyze(DefaultIO &dio, vector<AnomalyReport> &reports, int *n, const string &s) : Command(dio, s), ar(reports) {
       numOfLines = n;
-      //this->anomaliesSequenceVec = anomaliesSequence();
   }
 
+  // checks the ranges of anomalies that was detected in detect function
   vector<tuple<long, long>> checkDetectionRanges() {
       vector<tuple<long, long>> detectionRanges;
       string oldDescription;
       long oldTimeStep = 0;
       long start = 0;
       long end = 0;
-      int numOfAnomalyReports = (int) ar->size();
+      int numOfAnomalyReports = (int) ar.size();
       int i = 1;
-      for (const AnomalyReport &anomalyReport: *ar) {
+      // iterates through the anomalies and checks time ranges with the same description
+      for (const AnomalyReport &anomalyReport: ar) {
           string newDescription = anomalyReport.description;
           long newTimeStep = anomalyReport.timeStep;
           if (newDescription == oldDescription && oldTimeStep == newTimeStep - 1) {
               end = newTimeStep;
+              // condition to insert the last anomaly
               if (i == numOfAnomalyReports) {
                   detectionRanges.emplace_back(start, end);
               }
           }
           else {
+              // checks the range is bigger then 1
               if (end > start) {
                   detectionRanges.emplace_back(start, end);
               }
@@ -263,14 +281,15 @@ class Analyze : public Command {
           oldTimeStep = newTimeStep;
           i++;
       }
+      // returns vector with tuples - start of range and end of range
       return detectionRanges;
   }
 
   void execute() override {
-      dio->write("Please upload your local anomalies file.\n");
+      dio.write("Please upload your local anomalies file.\n");
       string line, f, t;
-      line = dio->read();
-      dio->write("Upload complete.\n");
+      line = dio.read();
+      dio.write("Upload complete.\n");
       vector<tuple<long, long>> clientAnomalies{};
       int N = *numOfLines;
       int P = 0;
@@ -279,7 +298,7 @@ class Analyze : public Command {
           getline(stringStream, f, ',');
           getline(stringStream, t, ',');
           clientAnomalies.emplace_back((long) stof(f), (long) stof(t));
-          line = dio->read();
+          line = dio.read();
           N -= ((int) stof(t) - (int) stof(f) + 1);
           P++;
       }
@@ -306,130 +325,57 @@ class Analyze : public Command {
       }
       float TPRate = ((int) (1000.0 * TP / P)) / 1000.0f;
       float FPRate = ((int) (1000.0 * FP / N)) / 1000.0f;
-      dio->write("True Positive Rate: ");
-      dio->write(TPRate);
-      dio->write("\nFalse Positive Rate: ");
-      dio->write(FPRate);
-      dio->write("\n");
-
-      //      for (const AnomalyReport &anomalyReport: *ar) {
-      //          bool c = true;
-      //          for (tuple<long, long> tuple: clientAnomalies) {
-      //              c = c && (anomalyReport.timeStep < get<0>(tuple) || anomalyReport.timeStep > get<1>(tuple));
-      //              i += 1;
-      //              if (!c) {
-      //                  tp += 1;
-      //                  break;
-      //              }
-      //          }
-      //          if (c) {
-      //              fp += i;
-      //              i = 0;
-      //          }
-      //      }
-
-      //      dio->write("Upload complete.\n");
-      //      std::stringstream stream;
-      //      stream << std::fixed << std::setprecision(3) << (float)TP / (float) clientAnomalies.size();
-      //      string s = stream.str();
-      //      string s1 = "True Positive Rate: " + s + '\n';
-      //      dio->write(s1);
-      //      std::stringstream stream1;
-      //      stream1 << std::fixed << std::setprecision(3) << (float)FP / (float)N;
-      //      s = stream1.str();
-      //      s1 = "False Positive Rate: " + s + '\n';
-      //      dio->write(s1);
+      dio.write("True Positive Rate: ");
+      dio.write(TPRate);
+      dio.write("\nFalse Positive Rate: ");
+      dio.write(FPRate);
+      dio.write("\n");
   }
-
-  // private:
-  //  bool isIntersect(long f1, long t1, long f2, long t2) {
-  //      return !(t2 < f1 || f2 > t1);
-  //  }
-  //  vector<tuple<long, long>> anomaliesSequence() {
-  //      vector<bool> isDeleted(ar->size());
-  //      //std::for_each(isDeleted.begin(), isDeleted.end(), [](bool b) { b = false; });
-  //      vector<tuple<long, long>> result{};
-  //      string d;
-  //      long f, t = 0;
-  //      while (find_if_not(isDeleted.begin(), isDeleted.end(), [](bool b) { return b; }) != isDeleted.end()) {
-  //          bool j = true;
-  //          for (int i = 0; i < ar->size(); ++i) {
-  //              if (j) {
-  //                  d = ar->at(i).description;
-  //                  f = ar->at(i).timeStep;
-  //                  t = f;
-  //                  isDeleted.at(i) = true;
-  //                  j = false;
-  //              }
-  //              else if (!isDeleted.at(i)) {
-  //                  if (ar->at(i).timeStep == t + 1 && d == ar->at(i).description) {
-  //                      t += 1;
-  //                      isDeleted.at(i) = true;
-  //                  }
-  //                  else if (ar->at(i).timeStep > t + 1) {
-  //                      i -= 1;
-  //                      j = true;
-  //                      result.emplace_back(f, t);
-  //                  }
-  //              }
-  //          }
-  //      }
-  //      result.emplace_back(f, t);
-  //      return result;
-  //  }
 };
-
-// option 6:
+/**
+ * Exit holds pointer to bool variable that determine whether to loop in the CLI should stop.
+ */
 class Exit : public Command {
   bool *running;
+ public:
+  Exit(DefaultIO &dio, const string &s, bool *b) : Command(dio, s), running(b) {}
+  /**
+   * if user wants to exit, just turn off the running plug
+   */
   void execute() override {
       *running = false;
   }
- public:
-  Exit(DefaultIO *dio, const string &s, bool *b) : Command(dio, s), running(b) {}
 };
-
-// implement here your command classes
 
 class CLIData {
  private:
-  DefaultIO *dio;
+  DefaultIO &dio;
   vector<AnomalyReport> reports{};
   vector<Command *> commands{6};
   TimeSeries *tsTest = new TimeSeries();
   TimeSeries *tsTrain = new TimeSeries();
   float *correlationThreshold = new float;
-  bool *running;
   int *numOfLines = new int;
  public:
-  CLIData(DefaultIO *d, bool *r, float ct) : dio(d) {
-      running = r;
-      *correlationThreshold = ct;
-      //commands = new Command*[6];
-      commands[0] = new Upload(d, "1.upload a time series csv file\n", tsTrain, tsTest, numOfLines);
+
+  CLIData(DefaultIO &d, bool *r) : dio(d) {
+      *correlationThreshold = 0.9;
+      commands[0] = new Upload(d, "1.upload a time series csv file\n", *tsTrain, *tsTest, numOfLines);
       commands[1] = new ChangeSettings(d, "2.algorithm settings\n", correlationThreshold);
-      commands[2] = new AnomalyDetection(d, "3.detect anomalies\n", &reports, tsTest, tsTrain, *correlationThreshold);
-      commands[3] = new GetResults(d, "4.display results\n", &reports);
-      commands[4] = new Analyze(dio, &reports, numOfLines, "5.upload anomalies and analyze results\n");
-      commands[5] = new Exit(d, "6.exit\n", running);
+      commands[2] = new AnomalyDetection(d, "3.detect anomalies\n", reports, *tsTest, *tsTrain, correlationThreshold);
+      commands[3] = new GetResults(d, "4.display results\n", reports);
+      commands[4] = new Analyze(dio, reports, numOfLines, "5.upload anomalies and analyze results\n");
+      commands[5] = new Exit(d, "6.exit\n", r);
   }
   void executeCommand(int i) {
       commands[i - 1]->execute();
   }
   void printMenu() {
-      dio->write("Welcome to the Anomaly Detection Server.\n"
-                 "Please choose an option:\n");
-      /*dio->write((*commands)->description);
-      dio->write(commands[1]->description);*/
-      /*for (int i = 0; i < 6; ++i) {
-          dio->write(commands[i]->description);
-      }*/
+      dio.write("Welcome to the Anomaly Detection Server.\n"
+                "Please choose an option:\n");
       for (Command *command: commands) {
-          dio->write(command->description);
+          dio.write(command->description);
       }
-  }
-  bool getRunning() {
-      return *this->running;
   }
   ~CLIData() {
       for (int i = 0; i < 6; ++i) {
@@ -443,3 +389,4 @@ class CLIData {
 };
 
 #endif /* COMMANDS_H_ */
+
